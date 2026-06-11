@@ -1,4 +1,4 @@
-CREATE TABLE `social_media_database`.`users`
+CREATE TABLE `users`
 (
     `id`         INT NOT NULL AUTO_INCREMENT,
     `first_name` VARCHAR(100) NULL,
