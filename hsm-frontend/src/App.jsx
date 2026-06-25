@@ -1,4 +1,5 @@
 import {useState} from 'react'
+import NewsPage from './NewsPage.jsx'
 import {
     Box,
     Button,
@@ -57,6 +58,7 @@ const textFieldStyles = {
 
 function App() {
     const [tab, setTab] = useState(0)
+    const [isLoggedIn, setIsLoggedIn] = useState(false)
 
     const [loading, setLoading] = useState(false)
     const [message, setMessage] = useState('')
@@ -115,12 +117,14 @@ function App() {
             const data = await response.json()
             console.log('Login response:', data)
             setMessage('Sikeres bejelentkezés!')
+            setIsLoggedIn(true)
         } catch (error) {
             console.error('Sikertelen bejelentkezés:', error)
             setError(error.message || 'Sikertelen bejelentkezés')
         } finally {
             setLoading(false)
         }
+
         setTimeout(() => {
             setLoading(false)
         }, 2000)
@@ -175,31 +179,46 @@ function App() {
         }
     }
 
+    const handleLogout = () => {
+        setIsLoggedIn(false)
+        setMessage('')
+        setError('')
+        setLoginData({
+            email: '',
+            password: '',
+        })
+        setShowPassword(false)
+        setTab(0)
+    }
+
     return (
         <ThemeProvider theme={darkTheme}>
             <CssBaseline/>
-            <Box
-                sx={{
-                    minHeight: '100vh',
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    px: 2,
-                    bgcolor: '#16171d',
-                }}
-            >
-                <Paper
-                    elevation={0}
+            {isLoggedIn ? (
+                <NewsPage onLogout={handleLogout} />
+            ) : (
+                <Box
                     sx={{
-                        width: '100%',
-                        maxWidth: 520,
-                        p: 4,
-                        borderRadius: 3,
+                        minHeight: '100vh',
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        px: 2,
                         bgcolor: '#16171d',
-                        color: '#f3f4f6',
-                        border: '1px solid #2e303a',
                     }}
                 >
+                    <Paper
+                        elevation={0}
+                        sx={{
+                            width: '100%',
+                            maxWidth: 520,
+                            p: 4,
+                            borderRadius: 3,
+                            bgcolor: '#16171d',
+                            color: '#f3f4f6',
+                            border: '1px solid #2e303a',
+                        }}
+                    >
                     <Typography variant="h4" textAlign="center" mb={3} sx={{color: '#f3f4f6', whiteSpace: 'nowrap'}}>
                         🇭🇺 Magyar közösségi oldal
                     </Typography>
@@ -389,8 +408,9 @@ function App() {
                             </Stack>
                         </Box>
                     )}
-                </Paper>
-            </Box>
+                    </Paper>
+                </Box>
+            )}
         </ThemeProvider>
     )
 }
