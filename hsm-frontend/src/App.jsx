@@ -2,6 +2,7 @@ import {useState} from 'react'
 import {
     Box,
     Button,
+    Checkbox,
     CssBaseline,
     CircularProgress,
     Paper,
@@ -11,7 +12,7 @@ import {
     TextField,
     ThemeProvider,
     Typography,
-    createTheme,
+    createTheme, FormControlLabel,
 } from '@mui/material'
 
 const darkTheme = createTheme({
@@ -58,6 +59,9 @@ function App() {
     const [tab, setTab] = useState(0)
 
     const [loading, setLoading] = useState(false)
+    const [message, setMessage] = useState('')
+    const [error, setError] = useState('')
+    const [showPassword, setShowPassword] = useState(false)
 
     const [loginData, setLoginData] = useState({
         email: '',
@@ -68,6 +72,7 @@ function App() {
         lastName: '',
         firstName: '',
         birthDate: '',
+        email: '',
         password: '',
         confirmPassword: '',
     })
@@ -88,14 +93,31 @@ function App() {
         }))
     }
 
-    const handleLoginSubmit = (e) => {
+    const handleLoginSubmit = async (e) => {
         e.preventDefault()
         setLoading(true)
+        setMessage('')
+        setError('')
 
         try {
-            console.log('Login data:', loginData)
+            const response = await fetch('http://localhost:8080/api/users/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(loginData),
+            })
+
+            if (!response.ok) {
+                throw new Error('Sikertelen bejelentkezés')
+            }
+
+            const data = await response.json()
+            console.log('Login response:', data)
+            setMessage('Sikeres bejelentkezés!')
         } catch (error) {
             console.error('Sikertelen bejelentkezés:', error)
+            setError(error.message || 'Sikertelen bejelentkezés')
         } finally {
             setLoading(false)
         }
@@ -104,15 +126,53 @@ function App() {
         }, 2000)
     }
 
-    const handleRegisterSubmit = (e) => {
+    const handleRegisterSubmit = async (e) => {
         e.preventDefault()
+        setLoading(true)
 
         if (registerData.password !== registerData.confirmPassword) {
             alert('A két jelszó nem egyezik!')
+            setLoading(false)
             return
         }
 
-        console.log('Register data:', registerData)
+        const userCreateDto = {
+            lastName: registerData.lastName,
+            firstName: registerData.firstName,
+            birthDate: registerData.birthDate,
+            email: registerData.email,
+            password: registerData.password,
+        }
+
+        try {
+            const response = await fetch('http://localhost:8080/api/users', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(userCreateDto),
+            })
+
+            if (!response.ok) {
+                if (response.status === 409) {
+                    throw new Error('Ezzel az email címmel már regisztráltak!')
+                }
+
+                const errorText = await response.text()
+                throw new Error(errorText || 'Sikertelen regisztráció')
+            }
+
+            const data = await response.json()
+            console.log('Register response:', data)
+
+            alert('Sikeres regisztráció!')
+            setTab(0)
+        } catch (error) {
+            console.error('Regisztrációs hiba:', error)
+            alert('Sikertelen regisztráció: ' + error.message)
+        } finally {
+            setLoading(false)
+        }
     }
 
     return (
@@ -166,6 +226,18 @@ function App() {
                         <Tab label="Regisztráció"/>
                     </Tabs>
 
+                    {message && (
+                        <Typography sx={{color: '#22c55e', mb: 2, textAlign: 'center'}}>
+                            {message}
+                        </Typography>
+                    )}
+
+                    {error && (
+                        <Typography sx={{color: '#ef4444', mb: 2, textAlign: 'center'}}>
+                            {error}
+                        </Typography>
+                    )}
+
                     {tab === 0 && (
                         <Box component="form" onSubmit={handleLoginSubmit}>
                             <Stack spacing={2}>
@@ -180,11 +252,29 @@ function App() {
                                 <TextField
                                     label="Jelszó"
                                     name="password"
-                                    type="password"
+                                    type={showPassword ? 'text' : 'password'}
                                     value={loginData.password}
                                     onChange={handleLoginChange}
                                     fullWidth
                                     sx={textFieldStyles}
+                                />
+                                <FormControlLabel
+                                    control={
+                                        <Checkbox
+                                            checked={showPassword}
+                                            onChange={(e) => setShowPassword(e.target.checked)}
+                                            sx={{
+                                                color: '#9ca3af',
+                                                '&.Mui-checked': {
+                                                    color: '#1a8afa',
+                                                },
+                                            }}
+                                        />
+                                    }
+                                    label="Jelszó mutatása"
+                                    sx={{
+                                        color: '#9ca3af',
+                                    }}
                                 />
                                 <Button
                                     type="submit"
@@ -207,8 +297,7 @@ function App() {
                                     }}
                                 >
                                     {loading ? (
-                                        <circularProgress size={24} sx={{color: '#16171d',}}
-                                        />
+                                        <CircularProgress size={24} sx={{color: '#16171d'}}/>
                                     ) : (
                                         'Belépés'
                                     )}
@@ -224,7 +313,7 @@ function App() {
                                     label="Vezetéknév"
                                     name="lastName"
                                     value={registerData.lastName}
-                                    onChange={handleLoginChange}
+                                    onChange={handleRegisterChange}
                                     fullWidth
                                     sx={textFieldStyles}
                                 />
@@ -232,7 +321,7 @@ function App() {
                                     label="Keresztnév"
                                     name="firstName"
                                     value={registerData.firstName}
-                                    onChange={handleLoginChange}
+                                    onChange={handleRegisterChange}
                                     fullWidth
                                     sx={textFieldStyles}
                                 />
@@ -252,7 +341,7 @@ function App() {
                                 </Stack>
                                 <TextField
                                     label="Email cím"
-                                    name="username"
+                                    name="email"
                                     value={registerData.email}
                                     onChange={handleRegisterChange}
                                     fullWidth
@@ -280,6 +369,7 @@ function App() {
                                     type="submit"
                                     variant="contained"
                                     size="large"
+                                    disabled={loading}
                                     sx={{
                                         mt: 1,
                                         bgcolor: '#1a8afa',
@@ -290,7 +380,11 @@ function App() {
                                         },
                                     }}
                                 >
-                                    Regisztráció
+                                    {loading ? (
+                                        <CircularProgress size={24} sx={{color: '#16171d'}}/>
+                                    ) : (
+                                        'Regisztráció'
+                                    )}
                                 </Button>
                             </Stack>
                         </Box>

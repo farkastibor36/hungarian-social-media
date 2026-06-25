@@ -1,7 +1,8 @@
 package com.example.hsmbackend.dto;
 
-import java.sql.Date;
+import java.time.LocalDate;
+import java.util.Date;
 
-public record UserCreateDto(String firstName, String lastName, Date birthDate, String email,
-                            String password) {
+public record UserCreateDto(String lastName, String firstName, LocalDate birthDate, String email,
+                            String password, Date createdA) {
 }

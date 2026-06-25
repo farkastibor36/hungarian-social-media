@@ -5,20 +5,27 @@ import com.example.hsmbackend.dto.UserCreateDto;
 import com.example.hsmbackend.dto.UserDto;
 import com.example.hsmbackend.model.User;
 import com.example.hsmbackend.service.UserCRUDServiceImpl;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@CrossOrigin(origins = "http://localhost:5173")
 @RequiredArgsConstructor
 @RestController
 public class UserController {
     private final UserCRUDServiceImpl userCRUDService;
 
     @PostMapping("/api/users")
-    public ResponseEntity<User> createUser(@RequestBody UserCreateDto userCreateDto) {
-        return ResponseEntity.ok(userCRUDService.createUser(userCreateDto));
+    public ResponseEntity<?> createUser(@Valid @RequestBody UserCreateDto userCreateDto) {
+        try {
+            return ResponseEntity.ok(userCRUDService.createUser(userCreateDto));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(409).body(e.getMessage());
+        }
     }
 
     @GetMapping("/api/users")
@@ -43,7 +50,11 @@ public class UserController {
     }
 
     @PostMapping("/api/users/login")
-    public ResponseEntity login(@RequestBody LoginRequestDto loginRequestDto) {
-        return ResponseEntity.ok(userCRUDService.login(loginRequestDto));
+    public ResponseEntity<Boolean> login(@RequestBody LoginRequestDto loginRequestDto) {
+        boolean successfulLogin = userCRUDService.login(loginRequestDto);
+        if (!successfulLogin) {
+            return ResponseEntity.status(401).body(false);
+        }
+        return ResponseEntity.ok(true);
     }
 }

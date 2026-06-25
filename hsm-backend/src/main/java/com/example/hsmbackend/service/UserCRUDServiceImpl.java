@@ -9,6 +9,7 @@ import com.example.hsmbackend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -20,7 +21,19 @@ public class UserCRUDServiceImpl implements UserService {
 
     @Override
     public User createUser(UserCreateDto userCreateDto) {
-        return userRepository.save(userMapper.toCreateEntity(userCreateDto));
+        if (userRepository.existsByEmail(userCreateDto.email())) {
+            throw new RuntimeException("Ezzel az email címmel már regisztráltak");
+        }
+        User user = new User();
+        user.setLastName(userCreateDto.lastName());
+        user.setFirstName(userCreateDto.firstName());
+        user.setBirthDate(userCreateDto.birthDate());
+        user.setEmail(userCreateDto.email());
+        user.setPassword(userCreateDto.password());
+
+        Date createdAt = new Date();
+        user.setCreatedAt(createdAt);
+        return userRepository.save(user);
     }
 
     @Override
@@ -30,6 +43,7 @@ public class UserCRUDServiceImpl implements UserService {
         user.setLastName(userCreateDto.lastName());
         user.setBirthDate(userCreateDto.birthDate());
         user.setEmail(userCreateDto.email());
+        user.setPassword(userCreateDto.password());
         return userMapper.toDto(userRepository.save(user));
     }
 
